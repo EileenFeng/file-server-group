@@ -1,0 +1,16 @@
+Gadget 1:
+Start address: X
+End address: Y
+Gadget operations: ...
+
+Gadget 2:
+Start address: X
+End address: Y
+Gadget operations: ...
+
+Gadget 3:
+Start address: X
+End address: Y
+Gadget operations: ...
+
+...
