@@ -86,8 +86,8 @@ struct fatFilePointer {
   char *data;
 };
 
-// Hastily stolen from:
-// https://www.linuxquestions.org/questions/programming-9/c-howto-read-binary-file-into-buffer-172985/
+#define CHUNK_SIZE 1000
+
 struct fatFilePointer read_file(char *name)
 {
 	FILE *file;
@@ -104,28 +104,27 @@ struct fatFilePointer read_file(char *name)
 		fprintf(stderr, "Unable to open file %s", name);
 		return ret;
 	}
-	
-	//Get file length
-	fseek(file, 0, SEEK_END);
-	fileLen=ftell(file);
-	fseek(file, 0, SEEK_SET);
 
-	//Allocate memory
-	buffer=(char *)malloc(fileLen);
-	if (!buffer)
-	{
-		fprintf(stderr, "Memory error!");
-                                fclose(file);
-		return ret;
-	}
+  fileLen = 0;
+  buffer = malloc(CHUNK_SIZE);
+  char temp[CHUNK_SIZE];
+  unsigned long bytesRead;
 
-	//Read file contents into buffer
-	fread(buffer, fileLen, 1, file);
-	fclose(file);
+  do {
+    bytesRead = fread(temp,1,CHUNK_SIZE,file);
+    char *newbuffer = malloc(fileLen + CHUNK_SIZE);
+    for (unsigned long i = 0; i < fileLen; i++) {
+      newbuffer[i] = buffer[i];
+    }
+    for (unsigned long i = 0; i < bytesRead; i++) {
+      newbuffer[fileLen + i] = temp[i];
+    }
+    fileLen += bytesRead;
+    buffer = newbuffer;
+  } while (bytesRead == CHUNK_SIZE);
 
   ret.length = fileLen;
   ret.data = buffer;
-
   return ret;
 }
 
