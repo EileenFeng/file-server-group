@@ -120,7 +120,9 @@ struct fatFilePointer read_file(char *name)
       newbuffer[fileLen + i] = temp[i];
     }
     fileLen += bytesRead;
+    char *oldbuf = buffer;
     buffer = newbuffer;
+    free(oldbuf);
   } while (bytesRead == CHUNK_SIZE);
 
   ret.length = fileLen;
