@@ -192,16 +192,17 @@ void serve_http(int socket, char *buffer) {
     strcpy(filetype, "text/plain");
   }
     
+  struct fatFilePointer contents = read_file(filename);
+
   /* print response header */
   fprintf(stream, "HTTP/1.1 200 OK\n");
   fprintf(stream, "Server: Tiny Web Server\n");
   printf("Writing file with length: %d\n", (int)sbuf.st_size);
-  fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size);
+  fprintf(stream, "Content-length: %d\n", contents.length);
   fprintf(stream, "Content-type: %s\n", filetype);
   fprintf(stream, "\r\n");
     
   // Use mmap to return arbitrary-sized response body 
-  struct fatFilePointer contents = read_file(filename);
   fwrite(contents.data, 1, contents.length, stream);
   free(contents.data);
   fflush(stream);
