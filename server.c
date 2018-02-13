@@ -81,6 +81,54 @@ void cerror(FILE *stream, char *cause, char *errno,
   fprintf(stream, "<hr><em>The Tiny Web server</em>\n");
 }
 
+struct fatFilePointer {
+  int length;
+  char *data;
+};
+
+// Hastily stolen from:
+// https://www.linuxquestions.org/questions/programming-9/c-howto-read-binary-file-into-buffer-172985/
+struct fatFilePointer read_file(char *name)
+{
+	FILE *file;
+	char *buffer;
+	unsigned long fileLen;
+  struct fatFilePointer ret;
+  ret.length = 0;
+  ret.data = NULL;
+
+	//Open file
+	file = fopen(name, "rb");
+	if (!file)
+	{
+		fprintf(stderr, "Unable to open file %s", name);
+		return ret;
+	}
+	
+	//Get file length
+	fseek(file, 0, SEEK_END);
+	fileLen=ftell(file);
+	fseek(file, 0, SEEK_SET);
+
+	//Allocate memory
+	buffer=(char *)malloc(fileLen);
+	if (!buffer)
+	{
+		fprintf(stderr, "Memory error!");
+                                fclose(file);
+		return ret;
+	}
+
+	//Read file contents into buffer
+	fread(buffer, fileLen, 1, file);
+	fclose(file);
+
+  ret.length = fileLen;
+  ret.data = buffer;
+
+  return ret;
+}
+
 /*
  * Responsd to an HTTP request
  */
@@ -153,12 +201,10 @@ void serve_http(int socket, char *buffer) {
   fprintf(stream, "\r\n");
     
   // Use mmap to return arbitrary-sized response body 
-  fd = open(filename, O_RDONLY);
-  p = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-  fwrite(p, 1, sbuf.st_size, stream);
-  munmap(p, sbuf.st_size);
+  struct fatFilePointer contents = read_file(filename);
+  fwrite(contents.data, 1, contents.length, stream);
+  free(contents.data);
   fflush(stream);
-
 }
 
 int handle_connection(int socket)
@@ -171,7 +217,6 @@ int handle_connection(int socket)
       // The connection has been closed
       break;
     }
-    char *rejected = "You are not authenticated right now, first use the `authenticate` command\n";
     logmsg("Received some data!");
     logmsg(buffer);
     if (prefix("goodbye",buffer)) {
